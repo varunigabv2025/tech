@@ -5,6 +5,7 @@ const db = require('./db/database');
 const unitRoutes = require('./routes/unitRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
+const registerPerson3 = require('./person3Register');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/api/units', unitRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/invoices', invoiceRoutes);
+registerPerson3(app);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
