@@ -12,6 +12,7 @@ import AAConsentCard from '@/components/AAConsentCard';
 import FactorBreakdown from '@/components/FactorBreakdown';
 import PaymentAgeing from '@/components/PaymentAgeing';
 import ODRModal from '@/components/ODRModal';
+import TredsCard from '@/components/TredsCard';
 import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
 import { ShieldCheckIcon } from '@/components/Icons';
@@ -29,6 +30,7 @@ export default function InvoiceDetailPage({ params }) {
   const [gstData, setGstData] = useState(null);
   const [aaData, setAaData] = useState(null);
   const [scoreData, setScoreData] = useState(null);
+  const [tredsPackage, setTredsPackage] = useState(null);
 
   // Modal state
   const [isODROpen, setIsODROpen] = useState(false);
@@ -69,6 +71,16 @@ export default function InvoiceDetailPage({ params }) {
           } catch {
             // Score endpoint may return 400 if unverified
           }
+        }
+
+        // Fetch TReDS package state if already packaged
+        try {
+          const pkgRes = await api.getPackage(invoiceId);
+          if (pkgRes.success && pkgRes.tredsPackage) {
+            setTredsPackage(pkgRes.tredsPackage);
+          }
+        } catch {
+          // Non-blocking, 404 if not packaged yet
         }
       } else {
         setError('Invoice not found');
@@ -349,6 +361,20 @@ export default function InvoiceDetailPage({ params }) {
       {scoreData && scoreData.breakdown && (
         <FactorBreakdown breakdown={scoreData.breakdown} />
       )}
+
+      {/* TReDS Financing Exchange Card */}
+      <TredsCard
+        invoice={invoice}
+        scoreData={scoreData}
+        tredsPackage={tredsPackage}
+        onPackageCreated={(pkg) => {
+          setTredsPackage(pkg);
+          setActionMessage({
+            type: 'success',
+            text: `Invoice successfully packaged and listed on TReDS (Package ID: ${pkg.id}, Exchange: ${pkg.exchange})`
+          });
+        }}
+      />
 
       {/* ODR Modal */}
       <ODRModal
