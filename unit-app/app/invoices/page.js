@@ -11,7 +11,7 @@ import ErrorState from '@/components/ErrorState';
 import Button from '@/components/Button';
 import { InvoicesIcon, OrdersIcon } from '@/components/Icons';
 import { api } from '@/lib/api';
-import { formatINR, formatDate, calculateDaysOutstanding } from '@/lib/format';
+import { formatINR, formatDate, getAgeingState } from '@/lib/format';
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState([]);
@@ -43,7 +43,7 @@ export default function InvoicesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Receivable Invoices"
-        description="Verify GST & bank flows, calculate TrustScores, and onboard receivables onto TReDS."
+        description="Verify GST & bank flows, calculate TrustScores, monitor 45-day MSMED ageing, and onboard receivables onto TReDS."
         badge="INVOICES"
         actions={
           <Link href="/orders">
@@ -99,7 +99,7 @@ export default function InvoicesPage() {
               </thead>
               <tbody className="divide-y divide-[#E2D4C3]">
                 {invoices.map((inv) => {
-                  const daysOutstanding = calculateDaysOutstanding(inv.invoiceDate || inv.invoice_date);
+                  const ageing = getAgeingState(inv.invoiceDate || inv.invoice_date);
 
                   return (
                     <tr key={inv.id} className="hover:bg-[#FAF6E9]/40 transition-colors">
@@ -118,8 +118,22 @@ export default function InvoicesPage() {
                       <td className="py-3.5 px-4 text-[#74512D]">
                         {formatDate(inv.dueDate || inv.due_date)}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-[#543310]">
-                        {daysOutstanding} {daysOutstanding === 1 ? 'day' : 'days'}
+                      <td className="py-3.5 px-4 font-mono">
+                        <div className="flex items-center gap-1.5">
+                          {ageing.status === 'OVERDUE' ? (
+                            <span className="inline-flex items-center gap-1 text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200" title="45-day MSMED limit exceeded">
+                              ⚠️ {ageing.days} days ({ageing.daysOverdue}d overdue)
+                            </span>
+                          ) : ageing.status === 'APPROACHING_THRESHOLD' || ageing.status === 'THRESHOLD_REACHED' ? (
+                            <span className="inline-flex items-center gap-1 text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200" title="Approaching 45-day threshold">
+                              ⚠️ {ageing.days} days
+                            </span>
+                          ) : (
+                            <span className="text-[#543310]">
+                              {ageing.days} {ageing.days === 1 ? 'day' : 'days'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 font-mono font-bold text-[#74512D]">
                         {inv.trustScore !== null && inv.trustScore !== undefined

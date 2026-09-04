@@ -54,3 +54,50 @@ export function calculateDaysOutstanding(invoiceDate) {
     return 0;
   }
 }
+
+export function getAgeingState(invoiceDate) {
+  const days = calculateDaysOutstanding(invoiceDate);
+  const THRESHOLD = 45;
+  const daysRemaining = THRESHOLD - days;
+
+  if (days > THRESHOLD) {
+    return {
+      status: 'OVERDUE',
+      days,
+      threshold: THRESHOLD,
+      daysOverdue: days - THRESHOLD,
+      daysRemaining: 0,
+      label: 'Payment Delay Alert',
+      severity: 'high'
+    };
+  } else if (days === THRESHOLD) {
+    return {
+      status: 'THRESHOLD_REACHED',
+      days,
+      threshold: THRESHOLD,
+      daysOverdue: 0,
+      daysRemaining: 0,
+      label: '45-Day Threshold Reached',
+      severity: 'warning'
+    };
+  } else if (days >= 31) {
+    return {
+      status: 'APPROACHING_THRESHOLD',
+      days,
+      threshold: THRESHOLD,
+      daysOverdue: 0,
+      daysRemaining,
+      label: 'Approaching 45 Days',
+      severity: 'medium'
+    };
+  }
+  return {
+    status: 'HEALTHY',
+    days,
+    threshold: THRESHOLD,
+    daysOverdue: 0,
+    daysRemaining,
+    label: 'Healthy Payment Term',
+    severity: 'low'
+  };
+}

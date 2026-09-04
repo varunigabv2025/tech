@@ -12,7 +12,7 @@ import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
 import { InvoicesIcon, OrdersIcon, PlusIcon, ShieldCheckIcon, AlertTriangleIcon } from '@/components/Icons';
 import { api } from '@/lib/api';
-import { formatINR, formatDate, calculateDaysOutstanding } from '@/lib/format';
+import { formatINR, formatDate, getAgeingState } from '@/lib/format';
 
 export default function UnitDashboard() {
   const [orders, setOrders] = useState([]);
@@ -53,13 +53,24 @@ export default function UnitDashboard() {
   const financeReadyCount = invoices.filter((i) => i.status === 'FINANCE_READY').length;
   const atRiskCount = invoices.filter((i) => i.status === 'AT_RISK').length;
 
+  // Compute 45-day MSMED ageing stats
+  const nearingThresholdCount = invoices.filter((inv) => {
+    const state = getAgeingState(inv.invoiceDate || inv.invoice_date);
+    return state.status === 'APPROACHING_THRESHOLD' || state.status === 'THRESHOLD_REACHED';
+  }).length;
+
+  const overdueThresholdCount = invoices.filter((inv) => {
+    const state = getAgeingState(inv.invoiceDate || inv.invoice_date);
+    return state.status === 'OVERDUE';
+  }).length;
+
   const recentInvoices = invoices.slice(0, 5);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Unit Operations & Receivables"
-        description="Track job-work orders, verify invoice TrustScores, and onboard receivables onto TReDS."
+        description="Track job-work orders, verify invoice TrustScores, monitor 45-day MSMED payment terms, and onboard receivables onto TReDS."
         badge="UNIT DASHBOARD"
         actions={
           <div className="flex items-center gap-2">
@@ -95,7 +106,7 @@ export default function UnitDashboard() {
         />
         <StatCard
           title="Finance Ready"
-          value={loading ? '...' : financeReadyCount > 0 ? String(financeReadyCount) : '—'}
+          value={loading ? '...' : String(financeReadyCount)}
           subtitle="TrustScore ≥ 90.00"
           icon={<ShieldCheckIcon className="w-5 h-5 text-emerald-700" />}
           badgeText="90% Advance Ready"
@@ -103,7 +114,7 @@ export default function UnitDashboard() {
         />
         <StatCard
           title="At Risk / Overdue"
-          value={loading ? '...' : atRiskCount > 0 ? String(atRiskCount) : '—'}
+          value={loading ? '...' : String(atRiskCount)}
           subtitle="Score < 70 or >45 days"
           icon={<AlertTriangleIcon className="w-5 h-5 text-rose-700" />}
           badgeText="45-Day Alert"
@@ -111,23 +122,30 @@ export default function UnitDashboard() {
         />
       </div>
 
-      {/* Quick Action Banner */}
+      {/* MSMED Payment Monitoring Banner */}
       <Card className="bg-[#FAF6E9] border-[#AF8F6F]/40">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h3 className="text-base font-semibold text-[#543310]">
-              Job-Work Workflow Progress
-            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-base">⏳</span>
+              <h3 className="text-base font-semibold text-[#543310]">
+                45-Day MSMED Payment Monitoring Summary
+              </h3>
+            </div>
             <p className="text-xs text-[#74512D]">
-              Create an order, mark delivery, and generate an invoice. Verification and TrustScore computation will trigger in Phase 4.
+              Section 15 of MSMED Act, 2006 mandates payment within 45 days. Delayed payments trigger MSME Samadhaan ODR complaint draft generation.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Link href="/orders">
-              <Button variant="primary" size="sm">
-                Start Order Workflow
-              </Button>
-            </Link>
+
+          <div className="flex items-center gap-4 shrink-0 font-mono text-xs">
+            <div className="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
+              <span className="text-[#AF8F6F] block text-[10px] uppercase font-sans font-semibold">Nearing 45 Days</span>
+              <strong className="text-sm">{loading ? '...' : nearingThresholdCount}</strong> Invoices
+            </div>
+            <div className="px-3 py-1.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-900">
+              <span className="text-rose-700 block text-[10px] uppercase font-sans font-semibold">Beyond 45 Days</span>
+              <strong className="text-sm">{loading ? '...' : overdueThresholdCount}</strong> Invoices
+            </div>
           </div>
         </div>
       </Card>
@@ -169,14 +187,14 @@ export default function UnitDashboard() {
                     <th className="py-3 px-4">Buyer Enterprise</th>
                     <th className="py-3 px-4">Amount</th>
                     <th className="py-3 px-4">Invoice Date</th>
-                    <th className="py-3 px-4">Days Outstanding</th>
+                    <th className="py-3 px-4">Ageing & 45-Day Status</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E2D4C3]">
                   {recentInvoices.map((inv) => {
-                    const daysOutstanding = calculateDaysOutstanding(inv.invoiceDate || inv.invoice_date);
+                    const ageing = getAgeingState(inv.invoiceDate || inv.invoice_date);
 
                     return (
                       <tr key={inv.id} className="hover:bg-[#FAF6E9]/40 transition-colors">
@@ -192,8 +210,20 @@ export default function UnitDashboard() {
                         <td className="py-3.5 px-4 text-[#74512D]">
                           {formatDate(inv.invoiceDate || inv.invoice_date)}
                         </td>
-                        <td className="py-3.5 px-4 font-mono text-[#543310]">
-                          {daysOutstanding} {daysOutstanding === 1 ? 'day' : 'days'}
+                        <td className="py-3.5 px-4 font-mono">
+                          {ageing.status === 'OVERDUE' ? (
+                            <span className="text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                              ⚠️ {ageing.days}d ({ageing.daysOverdue}d overdue)
+                            </span>
+                          ) : ageing.status === 'APPROACHING_THRESHOLD' || ageing.status === 'THRESHOLD_REACHED' ? (
+                            <span className="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              ⚠️ {ageing.days}d ({ageing.daysRemaining}d left)
+                            </span>
+                          ) : (
+                            <span className="text-[#543310] font-medium">
+                              {ageing.days} days
+                            </span>
+                          )}
                         </td>
                         <td className="py-3.5 px-4">
                           <StatusBadge status={inv.status} />

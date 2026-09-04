@@ -10,6 +10,8 @@ import ScoreGauge from '@/components/ScoreGauge';
 import GSTVerificationCard from '@/components/GSTVerificationCard';
 import AAConsentCard from '@/components/AAConsentCard';
 import FactorBreakdown from '@/components/FactorBreakdown';
+import PaymentAgeing from '@/components/PaymentAgeing';
+import ODRModal from '@/components/ODRModal';
 import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
 import { ShieldCheckIcon } from '@/components/Icons';
@@ -19,6 +21,7 @@ import { formatINR, formatDate, calculateDaysOutstanding } from '@/lib/format';
 export default function InvoiceDetailPage({ params }) {
   const invoiceId = params?.id;
   const [invoice, setInvoice] = useState(null);
+  const [unit, setUnit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,12 +30,15 @@ export default function InvoiceDetailPage({ params }) {
   const [aaData, setAaData] = useState(null);
   const [scoreData, setScoreData] = useState(null);
 
+  // Modal state
+  const [isODROpen, setIsODROpen] = useState(false);
+
   // Loading states
   const [verifying, setVerifying] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
 
-  // Fetch invoice on mount
+  // Fetch invoice & unit on mount
   const fetchInvoiceDetails = async () => {
     if (!invoiceId) return;
     setLoading(true);
@@ -41,6 +47,17 @@ export default function InvoiceDetailPage({ params }) {
       const res = await api.getInvoice(invoiceId);
       if (res.success && res.invoice) {
         setInvoice(res.invoice);
+
+        // Fetch associated unit
+        try {
+          const unitsRes = await api.getUnits();
+          if (unitsRes.success && Array.isArray(unitsRes.units)) {
+            const found = unitsRes.units.find((u) => u.id === res.invoice.unitId || u.id === res.invoice.unit_id);
+            if (found) setUnit(found);
+          }
+        } catch {
+          // Unit fetch is non-blocking
+        }
 
         // If invoice is already verified, fetch score if available
         if (res.invoice.verified && res.invoice.trustScore !== null) {
@@ -159,7 +176,7 @@ export default function InvoiceDetailPage({ params }) {
     <div className="space-y-8">
       <PageHeader
         title={`Invoice ${invoice.id}`}
-        description="Receivable verification evidence, GST filings, bank flows, and explainable TrustScore calculation."
+        description="Receivable verification evidence, MSMED payment ageing, and explainable TrustScore calculation."
         badge={currentStatus}
         actions={
           <Link href="/invoices">
@@ -182,7 +199,7 @@ export default function InvoiceDetailPage({ params }) {
                 ? 'Step 1: Run mock GST and Account Aggregator bank flow checks to verify the invoice.'
                 : currentScore === null
                 ? 'Step 2: Calculate rule-based TrustScore from verified signals.'
-                : 'Invoice verified and scored! Proceed to review status breakdown.'}
+                : 'Invoice verified and scored! Review status breakdown below.'}
             </p>
           </div>
 
@@ -241,7 +258,7 @@ export default function InvoiceDetailPage({ params }) {
         )}
       </Card>
 
-      {/* Main Grid: Overview & Verification (Left) + TrustScore Hero (Right) */}
+      {/* Main Grid: Overview, Payment Ageing & Verification (Left) + Score Hero (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Invoice Overview Card */}
@@ -268,7 +285,7 @@ export default function InvoiceDetailPage({ params }) {
                 <span className="font-medium text-[#543310]">{formatDate(invoice.invoiceDate || invoice.invoice_date)}</span>
               </div>
               <div>
-                <span className="text-[#AF8F6F] block">Due Date (45-Day Term)</span>
+                <span className="text-[#AF8F6F] block">Payment Due Date (45-Day Term)</span>
                 <span className="font-medium text-[#543310]">{formatDate(invoice.dueDate || invoice.due_date)}</span>
               </div>
               <div>
@@ -288,6 +305,12 @@ export default function InvoiceDetailPage({ params }) {
               </div>
             </div>
           </Card>
+
+          {/* 45-Day MSMED Payment Monitoring Card */}
+          <PaymentAgeing
+            invoiceDate={invoice.invoiceDate || invoice.invoice_date}
+            onOpenODR={() => setIsODROpen(true)}
+          />
 
           {/* GST Verification Evidence Card */}
           {gstData && <GSTVerificationCard gstData={gstData} />}
@@ -326,6 +349,14 @@ export default function InvoiceDetailPage({ params }) {
       {scoreData && scoreData.breakdown && (
         <FactorBreakdown breakdown={scoreData.breakdown} />
       )}
+
+      {/* ODR Modal */}
+      <ODRModal
+        isOpen={isODROpen}
+        onClose={() => setIsODROpen(false)}
+        invoice={invoice}
+        unit={unit}
+      />
     </div>
   );
 }
