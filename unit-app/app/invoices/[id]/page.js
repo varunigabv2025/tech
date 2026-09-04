@@ -15,6 +15,7 @@ import ODRModal from '@/components/ODRModal';
 import TredsCard from '@/components/TredsCard';
 import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { ShieldCheckIcon } from '@/components/Icons';
 import { api } from '@/lib/api';
 import { formatINR, formatDate, calculateDaysOutstanding } from '@/lib/format';
@@ -185,7 +186,8 @@ export default function InvoiceDetailPage({ params }) {
   const currentStatus = scoreData ? scoreData.status : invoice.status;
 
   return (
-    <div className="space-y-8">
+    <ProtectedRoute allowedRoles={['MSME']}>
+      <div className="space-y-8">
       <PageHeader
         title={`Invoice ${invoice.id}`}
         description="Receivable verification evidence, MSMED payment ageing, and explainable TrustScore calculation."
@@ -384,5 +386,6 @@ export default function InvoiceDetailPage({ params }) {
         unit={unit}
       />
     </div>
+    </ProtectedRoute>
   );
 }

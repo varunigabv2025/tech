@@ -7,25 +7,35 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: {
-          950: '#070D16',
-          900: '#0B1524',
-          800: '#122033',
-          700: '#1A2D45'
+        // TrustFlow Core Palette
+        cream: {
+          DEFAULT: '#F8F4E1',
+          50: '#FAF7EC',
+          100: '#F8F4E1',
+          200: '#EFE7CB'
         },
-        line: '#24364F',
-        teal: {
-          DEFAULT: '#2DD4BF',
-          dim: '#0F766E'
+        taupe: {
+          DEFAULT: '#AF8F6F',
+          light: '#C4A98E',
+          dark: '#937456'
         },
-        gold: '#E8C547'
+        brown: {
+          DEFAULT: '#74512D',
+          light: '#8E673D',
+          dark: '#543310'
+        },
+        deep: {
+          DEFAULT: '#543310',
+          darker: '#3B230B'
+        }
       },
       fontFamily: {
         sans: ['IBM Plex Sans', 'system-ui', 'sans-serif'],
         mono: ['IBM Plex Mono', 'ui-monospace', 'monospace']
       },
       boxShadow: {
-        glow: '0 0 40px rgba(45, 212, 191, 0.12)'
+        warm: '0 4px 20px -2px rgba(84, 51, 16, 0.06), 0 2px 6px -1px rgba(84, 51, 16, 0.04)',
+        warmLg: '0 10px 25px -3px rgba(84, 51, 16, 0.08), 0 4px 10px -2px rgba(84, 51, 16, 0.04)'
       }
     }
   },

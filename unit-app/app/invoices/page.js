@@ -9,6 +9,7 @@ import EmptyState from '@/components/EmptyState';
 import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
 import Button from '@/components/Button';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { InvoicesIcon, OrdersIcon } from '@/components/Icons';
 import { api } from '@/lib/api';
 import { formatINR, formatDate, getAgeingState } from '@/lib/format';
@@ -40,7 +41,8 @@ export default function InvoicesPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute allowedRoles={['MSME']}>
+      <div className="space-y-6">
       <PageHeader
         title="Receivable Invoices"
         description="Verify GST & bank flows, calculate TrustScores, monitor 45-day MSMED ageing, and onboard receivables onto TReDS."
@@ -159,5 +161,6 @@ export default function InvoicesPage() {
         </Card>
       )}
     </div>
+    </ProtectedRoute>
   );
 }

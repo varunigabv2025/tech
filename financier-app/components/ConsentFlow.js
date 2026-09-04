@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import StatusBadge from './StatusBadge';
-import { IconBank, IconCheck, IconKey } from './Icons';
+import { IconBank, IconCheck, IconKey, IconShield } from './Icons';
 
 export default function ConsentFlow() {
   const [units, setUnits] = useState([]);
@@ -21,7 +21,7 @@ export default function ConsentFlow() {
         setUnits(payload.units || []);
         if (payload.units?.[0]) setUnitId(payload.units[0].id);
       })
-      .catch((err) => setError(err.message || 'Could not load units'));
+      .catch((err) => setError(err.message || 'Could not load MSME units'));
   }, []);
 
   async function requestConsent() {
@@ -71,159 +71,188 @@ export default function ConsentFlow() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-teal">Account Aggregator · Sahamati pattern</p>
-        <h1 className="mt-1 text-3xl font-semibold text-white">Bank-data consent</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-          The unit never shares a net-banking password. TrustFlow requests a purpose-bound, time-bound pull. Approval happens on the bank app — the key trust moment before GST + AA data can score an invoice.
+      {/* Header */}
+      <div className="pb-2 border-b border-[#AF8F6F]/30">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#EFE7CB] text-[#543310] border border-[#AF8F6F]/40 mb-2">
+          <IconShield className="w-3.5 h-3.5 text-[#74512D]" />
+          <span>Account Aggregator Framework</span>
+        </div>
+        <h1 className="text-3xl font-bold text-[#543310] tracking-tight">Financial Data Consent Management</h1>
+        <p className="mt-1 max-w-3xl text-sm text-[#74512D]">
+          TrustFlow uses consent-based access to retrieve financial information via Account Aggregator. Banking passwords are never shared or stored by TrustFlow.
         </p>
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-3 text-sm text-rose-200">{error}</div>
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-900 flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-        <section className="rounded-2xl border border-line bg-ink-800/70 p-6">
-          <div className="flex items-center gap-2 text-teal">
-            <IconKey className="h-4 w-4" />
-            <h2 className="text-sm font-semibold uppercase tracking-widest">Consent artifact</h2>
+        {/* Left Column: Consent Request Setup & Details */}
+        <section className="rounded-2xl bg-white border border-[#AF8F6F]/40 p-6 shadow-warm space-y-6">
+          <div className="flex items-center gap-2 text-[#543310] pb-2 border-b border-[#E2D4C3]">
+            <IconKey className="w-5 h-5 text-[#74512D]" />
+            <h2 className="text-sm font-bold uppercase tracking-wider">Consent Request Setup</h2>
           </div>
 
-          <label className="mt-5 block text-xs uppercase tracking-widest text-slate-400" htmlFor="unit">
-            Job-work unit
-          </label>
-          <select
-            id="unit"
-            value={unitId}
-            onChange={(e) => setUnitId(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-sm text-white outline-none focus:border-teal/50"
-          >
-            {units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.id} · {unit.name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#74512D] mb-1.5" htmlFor="unit">
+              Select MSME Job-Work Unit
+            </label>
+            <select
+              id="unit"
+              value={unitId}
+              onChange={(e) => setUnitId(e.target.value)}
+              className="w-full rounded-xl border border-[#AF8F6F]/50 bg-[#FAF6E9] px-3.5 py-2.5 text-sm text-[#543310] font-semibold outline-none focus:ring-2 focus:ring-[#74512D]"
+            >
+              {units.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.id} &bull; {unit.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <button
             type="button"
             disabled={!unitId || Boolean(busy)}
             onClick={requestConsent}
-            className="mt-4 rounded-full bg-teal px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-teal/90 disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#74512D] hover:bg-[#543310] shadow-sm transition-all disabled:opacity-50"
           >
-            {busy === 'create' ? 'Creating request…' : 'Request AA consent'}
+            {busy === 'create' ? 'Creating Request...' : 'Initiate AA Consent Request'}
           </button>
 
           {consent ? (
-            <div className="mt-8 space-y-6">
+            <div className="space-y-6 pt-4 border-t border-[#E2D4C3]">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-mono text-sm text-white">{consent.id}</p>
+                <div>
+                  <p className="text-[11px] font-bold text-[#AF8F6F] uppercase">Consent Artifact ID</p>
+                  <p className="font-mono text-base font-bold text-[#543310]">{consent.id}</p>
+                </div>
                 <StatusBadge status={consent.status} />
               </div>
-              <div>
-                <p className="text-xs uppercase tracking-widest text-slate-500">FIU</p>
-                <p className="text-white">{consent.fiu.name} · {consent.fiu.product}</p>
+
+              <div className="grid gap-4 sm:grid-cols-2 text-xs">
+                <div className="p-3 rounded-xl bg-[#FAF6E9] border border-[#AF8F6F]/30">
+                  <p className="font-semibold text-[#AF8F6F] uppercase text-[10px]">Financial Information User (FIU)</p>
+                  <p className="font-bold text-[#543310] mt-0.5">{consent.fiu.name} &bull; {consent.fiu.product}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-[#FAF6E9] border border-[#AF8F6F]/30">
+                  <p className="font-semibold text-[#AF8F6F] uppercase text-[10px]">Consent Validity Expiry</p>
+                  <p className="font-bold text-[#543310] mt-0.5">{formatDate(consent.expiryDate)}</p>
+                </div>
               </div>
+
               <div>
-                <p className="text-xs uppercase tracking-widest text-slate-500">Purpose</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-300">{consent.purpose}</p>
+                <p className="text-xs font-bold text-[#74512D] uppercase tracking-wider mb-1">Purpose</p>
+                <p className="text-xs text-[#543310] bg-[#FAF6E9] p-3 rounded-xl border border-[#AF8F6F]/30 leading-relaxed font-medium">
+                  {consent.purpose}
+                </p>
               </div>
+
               <div>
-                <p className="text-xs uppercase tracking-widest text-slate-500">What is shared</p>
-                <ul className="mt-2 space-y-2">
+                <p className="text-xs font-bold text-[#74512D] uppercase tracking-wider mb-2">Requested Data Types</p>
+                <ul className="space-y-2">
                   {consent.dataTypes.map((item) => (
-                    <li key={item.code} className="rounded-xl border border-line bg-ink-900 px-4 py-3">
-                      <p className="text-sm text-white">{item.label}</p>
-                      <p className="text-xs text-slate-500">{item.reason}</p>
+                    <li key={item.code} className="p-3 rounded-xl bg-white border border-[#AF8F6F]/30 shadow-sm">
+                      <p className="text-xs font-bold text-[#543310]">{item.label}</p>
+                      <p className="text-[11px] text-[#74512D]">{item.reason}</p>
                     </li>
                   ))}
                 </ul>
               </div>
+
               <div>
-                <p className="text-xs uppercase tracking-widest text-slate-500">Accounts</p>
-                <ul className="mt-2 space-y-2">
+                <p className="text-xs font-bold text-[#74512D] uppercase tracking-wider mb-2">Linked Accounts</p>
+                <ul className="space-y-2">
                   {consent.fips.map((fip) => (
-                    <li key={fip.id} className="flex items-center justify-between rounded-xl border border-line px-4 py-3 text-sm">
-                      <span className="text-slate-200">{fip.name}</span>
-                      <span className="font-mono text-xs text-slate-500">{fip.accountMasked}</span>
+                    <li key={fip.id} className="flex items-center justify-between p-3 rounded-xl bg-[#FAF6E9] border border-[#AF8F6F]/30 text-xs">
+                      <span className="font-semibold text-[#543310]">{fip.name}</span>
+                      <span className="font-mono text-[#74512D] font-bold">{fip.accountMasked}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-500">Expires</p>
-                  <p className="text-white">{formatDate(consent.expiryDate)}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-500">Approval channel</p>
-                  <p className="text-white">Bank app · not TrustFlow</p>
-                </div>
-              </div>
-              <ul className="space-y-1 text-xs text-slate-500">
-                {consent.notes.map((note) => (
-                  <li key={note}>· {note}</li>
-                ))}
-              </ul>
             </div>
           ) : (
-            <p className="mt-8 text-sm text-slate-400">
-              Select {selected?.name || 'a unit'} and request consent. The unit then approves on their bank app.
+            <p className="text-xs text-[#74512D] italic pt-2">
+              Select an MSME unit above and click &quot;Initiate AA Consent Request&quot;. The unit will receive an authorization request on their mobile banking application.
             </p>
           )}
         </section>
 
+        {/* Right Column: Bank App Mock Simulation */}
         <aside className="flex flex-col items-center">
-          <p className="mb-4 text-[11px] uppercase tracking-[0.2em] text-slate-500">Approve on bank app</p>
-          <div className="w-full max-w-[320px] rounded-[2.2rem] border border-line bg-ink-950 p-3 shadow-glow">
-            <div className="rounded-[1.8rem] border border-line bg-ink-900 px-4 pb-6 pt-3">
-              <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-slate-600" />
-              <div className="flex items-center gap-2 text-teal">
-                <IconBank className="h-4 w-4" />
-                <p className="text-xs font-semibold uppercase tracking-widest">Linked bank</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[#74512D]">
+            Mobile Bank App Simulation
+          </p>
+          <div className="w-full max-w-[320px] rounded-[2rem] border-4 border-[#543310] bg-[#FAF6E9] p-3 shadow-warmLg">
+            <div className="rounded-[1.5rem] bg-white border border-[#AF8F6F]/40 p-4 space-y-4">
+              <div className="mx-auto h-1.5 w-14 rounded-full bg-[#AF8F6F]" />
+
+              <div className="flex items-center gap-2 text-[#543310] pb-2 border-b border-[#E2D4C3]">
+                <IconBank className="w-4 h-4 text-[#74512D]" />
+                <p className="text-xs font-bold uppercase tracking-wider">HDFC Bank AA Portal</p>
               </div>
-              <h2 className="mt-4 text-lg font-semibold text-white">Consent request</h2>
-              <p className="mt-1 text-xs text-slate-400">
-                {consent ? `${consent.fiu.name} wants 6-month account data for ${consent.unitName}.` : 'Waiting for a TrustFlow request.'}
-              </p>
+
+              <div>
+                <h3 className="text-sm font-bold text-[#543310]">Consent Authorization</h3>
+                <p className="mt-1 text-xs text-[#74512D] leading-snug">
+                  {consent
+                    ? `${consent.fiu.name} is requesting access to 6-month account statement for ${consent.unitName}.`
+                    : 'Awaiting consent request from TrustFlow.'}
+                </p>
+              </div>
+
               {consent ? (
                 <>
-                  <div className="mt-5 space-y-2 rounded-xl bg-ink-800 p-3 text-xs text-slate-300">
-                    <p>Purpose-bound · expires {formatDate(consent.expiryDate)}</p>
-                    <p>No credentials shared with TrustFlow</p>
-                    <p>Revocable from this app anytime</p>
+                  <div className="p-3 rounded-xl bg-[#FAF6E9] border border-[#AF8F6F]/30 space-y-1 text-[11px] text-[#543310]">
+                    <p>🔒 Purpose-bound &bull; Expires {formatDate(consent.expiryDate)}</p>
+                    <p>🔑 Zero net-banking passwords stored</p>
+                    <p>🛡️ Revocable from your bank app at any time</p>
                   </div>
+
                   {consent.status === 'PENDING' || phoneOpen ? (
-                    <div className="mt-6 grid gap-2">
+                    <div className="space-y-2 pt-2">
                       <button
                         type="button"
                         disabled={busy || consent.status !== 'PENDING'}
                         onClick={approve}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-teal py-2.5 text-sm font-semibold text-ink-950 disabled:opacity-50"
+                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-[#74512D] hover:bg-[#543310] shadow-sm transition-all disabled:opacity-50"
                       >
-                        <IconCheck />
-                        {busy === 'approve' ? 'Authorising…' : 'Approve'}
+                        <IconCheck className="w-4 h-4" />
+                        <span>{busy === 'approve' ? 'Authorizing...' : 'Approve Consent'}</span>
                       </button>
                       <button
                         type="button"
                         disabled={busy || consent.status !== 'PENDING'}
                         onClick={reject}
-                        className="rounded-full border border-line py-2.5 text-sm text-slate-300 disabled:opacity-50"
+                        className="w-full py-2.5 rounded-xl text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-all disabled:opacity-50"
                       >
-                        Deny
+                        Deny Consent
                       </button>
                     </div>
                   ) : (
-                    <p className={`mt-6 rounded-xl px-3 py-3 text-sm ${consent.status === 'APPROVED' ? 'bg-teal/15 text-teal' : 'bg-rose-500/10 text-rose-200'}`}>
+                    <div
+                      className={`p-3 rounded-xl text-xs font-bold text-center ${
+                        consent.status === 'APPROVED'
+                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                          : 'bg-rose-100 text-rose-900 border border-rose-300'
+                      }`}
+                    >
                       {consent.status === 'APPROVED'
-                        ? 'Approved. Cash-flow data can now feed TrustScore.'
-                        : 'Denied. TrustFlow cannot pull bank data.'}
-                    </p>
+                        ? '✓ Consent Approved. Cash-flow metrics unlocked for TrustScore calculation.'
+                        : '✕ Consent Denied by Unit.'}
+                    </div>
                   )}
                 </>
               ) : (
-                <p className="mt-8 text-center text-xs text-slate-500">No pending request on this device.</p>
+                <p className="py-6 text-center text-xs text-[#AF8F6F]">
+                  No active consent request.
+                </p>
               )}
             </div>
           </div>

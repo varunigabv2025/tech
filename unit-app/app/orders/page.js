@@ -11,6 +11,7 @@ import EmptyState from '@/components/EmptyState';
 import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
 import UnitSelector from '@/components/UnitSelector';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { OrdersIcon, PlusIcon, CheckCircleIcon, InvoicesIcon } from '@/components/Icons';
 import { api } from '@/lib/api';
 import { formatINR, formatDate } from '@/lib/format';
@@ -199,7 +200,8 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <ProtectedRoute allowedRoles={['MSME']}>
+      <div className="space-y-8">
       <PageHeader
         title="Job-Work Purchase Orders"
         description="Register new supply orders and mark delivery completion to generate receivable invoices."
@@ -453,5 +455,6 @@ export default function OrdersPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

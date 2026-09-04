@@ -10,6 +10,7 @@ import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
 import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { InvoicesIcon, OrdersIcon, PlusIcon, ShieldCheckIcon, AlertTriangleIcon } from '@/components/Icons';
 import { api } from '@/lib/api';
 import { formatINR, formatDate, getAgeingState } from '@/lib/format';
@@ -67,7 +68,8 @@ export default function UnitDashboard() {
   const recentInvoices = invoices.slice(0, 5);
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute allowedRoles={['MSME']}>
+      <div className="space-y-6">
       <PageHeader
         title="Unit Operations & Receivables"
         description="Track job-work orders, verify invoice TrustScores, monitor 45-day MSMED payment terms, and onboard receivables onto TReDS."
@@ -245,5 +247,6 @@ export default function UnitDashboard() {
         )}
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

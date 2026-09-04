@@ -39,6 +39,16 @@ const createInvoice = (req, res) => {
       });
     }
 
+    // Check MSME unit ownership
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      if (req.user.unitId !== order.unit_id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Order belongs to a different unit.'
+        });
+      }
+    }
+
     // 2. Check delivery_status
     if (order.delivery_status !== 'DELIVERED') {
       return res.status(400).json({
@@ -109,7 +119,12 @@ const createInvoice = (req, res) => {
 // GET /api/invoices
 const getInvoices = (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM invoices ORDER BY created_at DESC').all();
+    let rows = [];
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      rows = db.prepare('SELECT * FROM invoices WHERE unit_id = ? ORDER BY created_at DESC').all(req.user.unitId);
+    } else {
+      rows = db.prepare('SELECT * FROM invoices ORDER BY created_at DESC').all();
+    }
     const invoices = rows.map(formatInvoiceRow);
 
     return res.status(200).json({
@@ -138,6 +153,16 @@ const getInvoiceById = (req, res) => {
       });
     }
 
+    // Check MSME unit ownership
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      if (req.user.unitId !== invoiceRow.unit_id) {
+        return res.status(404).json({
+          success: false,
+          message: 'Invoice not found'
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       invoice: formatInvoiceRow(invoiceRow)
@@ -163,6 +188,16 @@ const verifyInvoice = (req, res) => {
         success: false,
         message: 'Invoice not found'
       });
+    }
+
+    // Check MSME unit ownership
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      if (req.user.unitId !== invoice.unit_id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Invoice belongs to a different unit.'
+        });
+      }
     }
 
     // 2. Find unit

@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -14,10 +14,7 @@ body {
 }
 
 body {
-  @apply bg-ink-950 font-sans text-slate-100 antialiased;
-  background-image:
-    radial-gradient(1200px 500px at 10% -10%, rgba(45, 212, 191, 0.08), transparent 50%),
-    radial-gradient(900px 400px at 90% 0%, rgba(232, 197, 71, 0.05), transparent 45%);
+  @apply bg-[#F8F4E1] font-sans text-[#543310] antialiased;
 }
 
 button,
@@ -29,7 +26,7 @@ select {
 button:focus-visible,
 a:focus-visible,
 select:focus-visible {
-  outline: 2px solid #2DD4BF;
+  outline: 2px solid #74512D;
   outline-offset: 2px;
 }
 
