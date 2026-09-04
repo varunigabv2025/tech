@@ -74,9 +74,9 @@ export default function Navigation() {
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#74512D] bg-[#FAF6E9] border border-[#AF8F6F]/50 hover:bg-[#EFE7CB] hover:border-[#74512D] transition-all"
-              title="Switch to Financier View"
+              title="Switch to Financier Desk"
             >
-              <span>Financier View</span>
+              <span>Financier Desk &rarr;</span>
               <ExternalLinkIcon className="w-3.5 h-3.5 text-[#74512D]" />
             </a>
           </div>
