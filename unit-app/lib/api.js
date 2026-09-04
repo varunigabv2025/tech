@@ -53,6 +53,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' }
     }).then(handleResponse),
   getScore: (id) => fetch(`${API_BASE}/api/invoices/${id}/score`).then(handleResponse),
+  getInvoiceScore: (id) => fetch(`${API_BASE}/api/invoices/${id}/score`).then(handleResponse),
 
   // TReDS Packaging API
   packageInvoice: (id) =>

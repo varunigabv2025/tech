@@ -1,6 +1,12 @@
 import React from 'react';
 import StatusBadge from './StatusBadge';
 
+const STATUS_DESCRIPTIONS = {
+  FINANCE_READY: 'High confidence for instant financing / TReDS onboarding.',
+  REVIEW: 'Manual underwriting recommended. Moderate risk profile.',
+  AT_RISK: 'High risk factor present. Requires risk mitigation before listing.'
+};
+
 export default function ScoreGauge({
   score = null,
   status = null,
@@ -9,6 +15,7 @@ export default function ScoreGauge({
 }) {
   const displayScore = score !== null && score !== undefined ? Number(score).toFixed(2) : '—';
   const maxScore = 100;
+  const description = STATUS_DESCRIPTIONS[status] || 'Verify invoice data to compute TrustScore.';
 
   if (compact) {
     return (
@@ -23,47 +30,41 @@ export default function ScoreGauge({
   }
 
   return (
-    <div className="bg-[#FAF6E9] border border-[#E2D4C3] rounded-xl p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white border-2 border-[#AF8F6F]/60 rounded-xl p-6 shadow-warm space-y-4">
+      <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-[#74512D] uppercase tracking-wider">
-          TrustScore Breakdown
+          TrustScore Hero
         </span>
-        {status && <StatusBadge status={status} />}
+        {status ? (
+          <StatusBadge status={status} />
+        ) : (
+          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-[#FAF6E9] text-[#74512D] border border-[#AF8F6F]/40">
+            Unscored
+          </span>
+        )}
       </div>
 
-      <div className="flex items-baseline gap-2 mb-4">
-        <span className="text-3xl font-extrabold text-[#543310] font-mono">
-          {displayScore}
+      <div className="text-center py-4 bg-[#FAF6E9] rounded-xl border border-[#E2D4C3]">
+        <span className="text-[11px] font-semibold text-[#74512D] uppercase tracking-wider block mb-1">
+          Calculated TrustScore
         </span>
-        <span className="text-sm font-medium text-[#AF8F6F]">/ {maxScore} pts</span>
-      </div>
-
-      {breakdown ? (
-        <div className="space-y-3 pt-3 border-t border-[#E2D4C3]">
-          {Object.entries(breakdown).map(([key, factor]) => (
-            <div key={key} className="space-y-1">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-[#543310] capitalize">
-                  {key.replace(/([A-Z])/g, ' $1')}
-                </span>
-                <span className="font-mono text-[#74512D]">
-                  {factor.score} / {factor.max}
-                </span>
-              </div>
-              <div className="w-full bg-[#E2D4C3] h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-[#74512D] h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, (factor.score / factor.max) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ))}
+        <div className="flex items-baseline justify-center gap-1.5">
+          <span className="text-4xl sm:text-5xl font-extrabold text-[#543310] font-mono tracking-tight">
+            {displayScore}
+          </span>
+          <span className="text-sm font-semibold text-[#AF8F6F]">/ {maxScore}</span>
         </div>
-      ) : (
-        <p className="text-xs text-[#AF8F6F] italic border-t border-[#E2D4C3] pt-3">
-          Score breakdown will populate after verification.
-        </p>
+      </div>
+
+      {status && (
+        <div className="p-3 rounded-lg bg-[#FAF6E9]/60 border border-[#E2D4C3] text-center">
+          <span className="text-xs font-medium text-[#543310] block">{description}</span>
+        </div>
       )}
+
+      <div className="pt-2 text-center text-[11px] text-[#74512D] border-t border-[#E2D4C3]">
+        <span>Deterministic 100-point formula &bull; Rule-based risk engine</span>
+      </div>
     </div>
   );
 }
