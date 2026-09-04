@@ -2,8 +2,8 @@ import './globals.css';
 import AppShell from '@/components/AppShell';
 
 export const metadata = {
-  title: 'TrustFlow · Financier desk',
-  description: 'Person 3 — TReDS packaging, financier underwriting, and Account Aggregator consent'
+  title: 'TrustFlow · Financier Desk',
+  description: 'TReDS receivables underwriting, explainable TrustScore evaluation, and Account Aggregator consent platform'
 };
 
 export default function RootLayout({ children }) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { formatDate, inr } from '@/lib/format';
@@ -10,10 +10,10 @@ import FactorBreakdown from './FactorBreakdown';
 import { IconArrowRight, IconCheck, IconDoc } from './Icons';
 
 const STEPS = [
-  { id: 'scored', label: 'TrustScore generated' },
-  { id: 'listed', label: 'Packaged for RXIL' },
-  { id: 'disbursed', label: '90% paid to unit' },
-  { id: 'settled', label: 'Buyer pays financier' }
+  { id: 'scored', label: 'TrustScore Generated' },
+  { id: 'listed', label: 'Packaged for TReDS' },
+  { id: 'disbursed', label: '90% Disbursed to Unit' },
+  { id: 'settled', label: 'Term Settlement Received' }
 ];
 
 function stepState(invoice, id) {
@@ -42,7 +42,7 @@ export default function InvoiceDetail({ invoiceId }) {
   useEffect(() => {
     let cancelled = false;
     load().catch((err) => {
-      if (!cancelled) setError(err.message || 'Could not load invoice');
+      if (!cancelled) setError(err.message || 'Could not load invoice underwriting file.');
     });
     return () => {
       cancelled = true;
@@ -56,7 +56,7 @@ export default function InvoiceDetail({ invoiceId }) {
       const result = await fn();
       if (result.invoice) setInvoice(result.invoice);
       else await load();
-      setFlash(result.message || 'Done');
+      setFlash(result.message || 'Operation completed successfully.');
     } catch (err) {
       setError(err.message || 'Action failed');
     } finally {
@@ -65,15 +65,22 @@ export default function InvoiceDetail({ invoiceId }) {
   }
 
   if (!invoice && !error) {
-    return <p className="text-slate-400">Loading underwriting file…</p>;
+    return (
+      <div className="flex items-center justify-center py-20 text-[#74512D]">
+        <div className="flex items-center gap-2 font-medium">
+          <span className="w-5 h-5 border-2 border-[#74512D]/30 border-t-[#74512D] rounded-full animate-spin" />
+          <span>Loading underwriting file...</span>
+        </div>
+      </div>
+    );
   }
 
   if (error && !invoice) {
     return (
-      <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-4 text-sm text-rose-200">
-        {error}{' '}
-        <Link href="/" className="underline">
-          Back to desk
+      <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-sm font-semibold text-rose-900 space-y-2">
+        <p>⚠️ {error}</p>
+        <Link href="/" className="inline-block text-xs font-bold text-[#543310] underline">
+          &larr; Return to Financier Desk
         </Link>
       </div>
     );
@@ -87,189 +94,234 @@ export default function InvoiceDetail({ invoiceId }) {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      {/* Header Bar */}
+      <div className="flex flex-wrap items-start justify-between gap-4 pb-2 border-b border-[#AF8F6F]/30">
         <div>
-          <Link href="/" className="text-xs text-slate-400 transition-colors hover:text-teal">
-            ← Financier desk
+          <Link href="/" className="text-xs font-bold text-[#74512D] hover:text-[#543310] transition-colors">
+            &larr; Back to Financier Desk
           </Link>
-          <h1 className="mt-2 font-mono text-3xl text-white">{invoice.id}</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            {invoice.unitName} · {invoice.buyerName} · {formatDate(invoice.invoiceDate)}
+          <div className="flex items-center gap-3 mt-1">
+            <h1 className="font-mono text-3xl font-bold text-[#543310]">{invoice.id}</h1>
+            <StatusBadge status={invoice.trustStatus} />
+            <StatusBadge status={disb?.status || invoice.tredsStatus} />
+          </div>
+          <p className="mt-1 text-sm font-medium text-[#74512D]">
+            {invoice.unitName} &bull; Buyer: {invoice.buyerName} &bull; Invoice Date: {formatDate(invoice.invoiceDate)}
           </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={invoice.trustStatus} />
-          <StatusBadge status={disb?.status || invoice.tredsStatus} />
         </div>
       </div>
 
-      {flash ? (
-        <div className="rounded-2xl border border-teal/30 bg-teal/10 px-5 py-3 text-sm text-teal">{flash}</div>
-      ) : null}
-      {error ? (
-        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-3 text-sm text-rose-200">{error}</div>
-      ) : null}
+      {flash && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-semibold text-emerald-900 flex items-center gap-2">
+          <span>✅</span>
+          <span>{flash}</span>
+        </div>
+      )}
+      {error && (
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-900 flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
 
+      {/* Progress Stepper */}
       <ol className="grid gap-3 sm:grid-cols-4">
         {STEPS.map((step, index) => {
           const done = stepState(invoice, step.id);
           return (
-            <li key={step.id} className={`rounded-2xl border p-4 ${done ? 'border-teal/40 bg-teal/10' : 'border-line bg-ink-800/50'}`}>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500">0{index + 1}</p>
-              <p className={`mt-1 text-sm ${done ? 'text-white' : 'text-slate-400'}`}>{step.label}</p>
+            <li
+              key={step.id}
+              className={`rounded-2xl border p-4 transition-all ${
+                done
+                  ? 'border-[#74512D] bg-[#FAF6E9] shadow-sm'
+                  : 'border-[#AF8F6F]/30 bg-white opacity-70'
+              }`}
+            >
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#AF8F6F]">
+                0{index + 1}
+              </p>
+              <p className={`mt-1 text-xs font-bold ${done ? 'text-[#543310]' : 'text-[#74512D]'}`}>
+                {step.label}
+              </p>
             </li>
           );
         })}
       </ol>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        {/* Left Column: Underwriting File Cards */}
         <section className="space-y-6">
-          <div className="rounded-2xl border border-line bg-ink-800/60 p-6">
-            <div className="flex items-center gap-2 text-teal">
-              <IconDoc className="h-4 w-4" />
-              <h2 className="text-sm font-semibold uppercase tracking-widest">Invoice</h2>
+          {/* Invoice Information */}
+          <div className="rounded-2xl bg-white border border-[#AF8F6F]/40 p-6 shadow-warm">
+            <div className="flex items-center gap-2 text-[#543310] mb-4 pb-2 border-b border-[#E2D4C3]">
+              <IconDoc className="w-5 h-5 text-[#74512D]" />
+              <h2 className="text-sm font-bold uppercase tracking-wider">Invoice Details</h2>
             </div>
-            <dl className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
+            <dl className="grid gap-4 sm:grid-cols-2 text-xs">
               <div>
-                <dt className="text-slate-500">Amount</dt>
-                <dd className="font-mono text-lg text-white">{inr(invoice.amount)}</dd>
+                <dt className="text-[#AF8F6F] font-medium">Invoice Amount</dt>
+                <dd className="font-mono text-xl font-bold text-[#543310]">{inr(invoice.amount)}</dd>
               </div>
               <div>
-                <dt className="text-slate-500">Due date</dt>
-                <dd className="text-white">{formatDate(invoice.dueDate)}</dd>
+                <dt className="text-[#AF8F6F] font-medium">Payment Due Date</dt>
+                <dd className="text-sm font-bold text-[#543310]">{formatDate(invoice.dueDate)}</dd>
               </div>
               <div>
-                <dt className="text-slate-500">GSTIN</dt>
-                <dd className="font-mono text-slate-200">{invoice.gstNumber}</dd>
+                <dt className="text-[#AF8F6F] font-medium">MSME GSTIN</dt>
+                <dd className="font-mono text-sm font-bold text-[#543310]">{invoice.gstNumber}</dd>
               </div>
               <div>
-                <dt className="text-slate-500">Description</dt>
-                <dd className="text-slate-200">{invoice.description || '—'}</dd>
+                <dt className="text-[#AF8F6F] font-medium">Order Description</dt>
+                <dd className="text-sm font-semibold text-[#543310]">{invoice.description || '—'}</dd>
               </div>
             </dl>
           </div>
 
-          <div className="rounded-2xl border border-line bg-ink-800/60 p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-teal">RXIL-style TReDS package</h2>
-            <p className="mt-2 text-xs text-slate-400">
-              TrustFlow does not lend. It only formats a verified receivable the way an exchange like RXIL expects.
+          {/* TReDS Package Information */}
+          <div className="rounded-2xl bg-white border border-[#AF8F6F]/40 p-6 shadow-warm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#543310] mb-1">
+              TReDS Exchange Package (RXIL)
+            </h2>
+            <p className="text-xs text-[#74512D] mb-4">
+              Standardized TReDS factoring instrument formatted from verified delivery and GST data.
             </p>
             {pkg ? (
-              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <dl className="grid gap-3 text-xs sm:grid-cols-2 bg-[#FAF6E9] p-4 rounded-xl border border-[#AF8F6F]/30">
                 <div>
-                  <dt className="text-slate-500">Exchange</dt>
-                  <dd className="text-white">{pkg.exchange} · {pkg.instrumentType}</dd>
+                  <dt className="text-[#AF8F6F] font-medium">Exchange Platform</dt>
+                  <dd className="font-semibold text-[#543310]">{pkg.exchange} &bull; {pkg.instrumentType}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">Package ID</dt>
-                  <dd className="font-mono text-white">{invoice.tredsPackage.id}</dd>
+                  <dt className="text-[#AF8F6F] font-medium">Package Reference ID</dt>
+                  <dd className="font-mono font-bold text-[#543310]">{invoice.tredsPackage.id}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">Seller</dt>
-                  <dd className="text-white">{pkg.seller?.name}</dd>
+                  <dt className="text-[#AF8F6F] font-medium">Seller Entity</dt>
+                  <dd className="font-semibold text-[#543310]">{pkg.seller?.name}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">Recourse</dt>
-                  <dd className="text-white">{String(pkg.recourse || '').replaceAll('_', ' ')}</dd>
+                  <dt className="text-[#AF8F6F] font-medium">Recourse Type</dt>
+                  <dd className="font-semibold text-[#543310]">{String(pkg.recourse || '').replace(/_/g, ' ')}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">Advance now</dt>
-                  <dd className="font-mono text-teal">{inr(pkg.financingRequest?.disbursedAmount)}</dd>
+                  <dt className="text-[#AF8F6F] font-medium">Disbursement Advance (90%)</dt>
+                  <dd className="font-mono font-bold text-emerald-800">{inr(pkg.financingRequest?.disbursedAmount)}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">Holdback / spread</dt>
-                  <dd className="font-mono text-gold">{inr(pkg.financingRequest?.holdbackAmount)}</dd>
+                  <dt className="text-[#AF8F6F] font-medium">Financier Spread / Holdback (10%)</dt>
+                  <dd className="font-mono font-bold text-amber-800">{inr(pkg.financingRequest?.holdbackAmount)}</dd>
                 </div>
               </dl>
             ) : (
-              <p className="mt-4 text-sm text-slate-400">Not listed yet. Accepting will package this invoice onto the mock RXIL board.</p>
+              <p className="text-xs text-[#74512D] italic">
+                Not packaged yet. Click below to generate the TReDS packaging instrument.
+              </p>
             )}
             <button
               type="button"
               disabled={Boolean(busy)}
               onClick={() => run('package', () => api.packageInvoice(invoice.id))}
-              className="mt-5 rounded-full border border-line px-4 py-2 text-sm text-slate-200 transition-colors duration-200 hover:border-teal/40 disabled:opacity-50"
+              className="mt-4 px-4 py-2 rounded-xl text-xs font-bold text-[#543310] bg-[#FAF6E9] border border-[#AF8F6F]/50 hover:bg-[#EFE7CB] transition-all disabled:opacity-50"
             >
-              {busy === 'package' ? 'Packaging…' : pkg ? 'Refresh package' : 'Send to TReDS'}
+              {busy === 'package' ? 'Processing...' : pkg ? 'Refresh TReDS Package' : 'Generate TReDS Package'}
             </button>
           </div>
 
-          <div className="rounded-2xl border border-line bg-ink-800/60 p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-teal">Cash movement</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-ink-900 p-4">
-                <p className="text-xs text-slate-500">Unit receives now</p>
-                <p className="mt-1 font-mono text-xl text-white">{inr(invoice.financing.unitReceivesNow)}</p>
-                <p className="text-xs text-slate-500">90% of invoice</p>
+          {/* Cash Movement & Underwriting Decision */}
+          <div className="rounded-2xl bg-white border border-[#AF8F6F]/40 p-6 shadow-warm space-y-5">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#543310]">
+              Cash Movement & Financing Decision
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="p-3.5 rounded-xl bg-[#FAF6E9] border border-[#AF8F6F]/30">
+                <p className="text-[11px] font-semibold text-[#AF8F6F]">Unit Advance (90%)</p>
+                <p className="mt-1 font-mono text-lg font-bold text-[#543310]">
+                  {inr(invoice.financing.unitReceivesNow)}
+                </p>
+                <p className="text-[10px] text-[#74512D]">Disbursed to MSME</p>
               </div>
-              <div className="rounded-xl bg-ink-900 p-4">
-                <p className="text-xs text-slate-500">Held by financier</p>
-                <p className="mt-1 font-mono text-xl text-gold">{inr(invoice.financing.holdbackAmount)}</p>
-                <p className="text-xs text-slate-500">10% until buyer pays</p>
+              <div className="p-3.5 rounded-xl bg-[#FAF6E9] border border-[#AF8F6F]/30">
+                <p className="text-[11px] font-semibold text-[#AF8F6F]">Holdback (10%)</p>
+                <p className="mt-1 font-mono text-lg font-bold text-amber-800">
+                  {inr(invoice.financing.holdbackAmount)}
+                </p>
+                <p className="text-[10px] text-[#74512D]">Financier Margin</p>
               </div>
-              <div className="rounded-xl bg-ink-900 p-4">
-                <p className="text-xs text-slate-500">Buyer pays at term</p>
-                <p className="mt-1 font-mono text-xl text-white">{inr(invoice.financing.financierReceivesAtTerm)}</p>
-                <p className="text-xs text-slate-500">Routes to financier, not the unit</p>
+              <div className="p-3.5 rounded-xl bg-[#FAF6E9] border border-[#AF8F6F]/30">
+                <p className="text-[11px] font-semibold text-[#AF8F6F]">Term Settlement</p>
+                <p className="mt-1 font-mono text-lg font-bold text-[#543310]">
+                  {inr(invoice.financing.financierReceivesAtTerm)}
+                </p>
+                <p className="text-[10px] text-[#74512D]">Paid by Buyer at Maturity</p>
               </div>
             </div>
 
-            {disb?.status === 'SETTLED' ? (
-              <p className="mt-4 text-sm text-gold">
-                Settlement complete. Financier recovered the 90% advance and kept {inr(disb.holdbackAmount)} as spread. The unit does not receive the remaining 10%.
-              </p>
-            ) : null}
+            {disb?.status === 'SETTLED' && (
+              <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-xs font-semibold text-purple-900">
+                ✓ Settlement complete. Financier recovered the 90% advance and retained {inr(disb.holdbackAmount)} as financing margin.
+              </div>
+            )}
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              {canAccept ? (
+            <div className="flex flex-wrap gap-3 pt-2">
+              {canAccept && (
                 <>
                   <button
                     type="button"
                     disabled={Boolean(busy)}
                     onClick={() => run('accept', () => api.acceptInvoice(invoice.id))}
-                    className="inline-flex items-center gap-2 rounded-full bg-teal px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-teal/90 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#74512D] hover:bg-[#543310] shadow-sm transition-all disabled:opacity-50"
                   >
-                    <IconCheck />
-                    {busy === 'accept' ? 'Disbursing…' : 'Accept · disburse 90%'}
+                    <IconCheck className="w-4 h-4" />
+                    <span>{busy === 'accept' ? 'Disbursing 90%...' : 'Accept Financing & Disburse 90%'}</span>
                   </button>
                   <button
                     type="button"
                     disabled={Boolean(busy)}
                     onClick={() => run('decline', () => api.declineInvoice(invoice.id))}
-                    className="rounded-full border border-line px-5 py-2.5 text-sm text-slate-300 transition-colors duration-200 hover:border-rose-400/40 hover:text-rose-200 disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-all disabled:opacity-50"
                   >
-                    Decline
+                    Decline Opportunity
                   </button>
                 </>
-              ) : null}
-              {canSettle ? (
+              )}
+              {canSettle && (
                 <button
                   type="button"
                   disabled={Boolean(busy)}
                   onClick={() => run('settle', () => api.settleInvoice(invoice.id))}
-                  className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-gold/90 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#543310] hover:bg-[#74512D] shadow-sm transition-all disabled:opacity-50"
                 >
-                  Simulate buyer payment
-                  <IconArrowRight />
+                  <span>Simulate Buyer Term Settlement</span>
+                  <IconArrowRight className="w-4 h-4" />
                 </button>
-              ) : null}
+              )}
             </div>
-            {invoice.trustStatus === 'AT_RISK' && canAccept ? (
-              <p className="mt-3 text-xs text-rose-300">This file is below 70. Accepting is allowed for the demo, but a real financier would likely pass.</p>
-            ) : null}
+
+            {invoice.trustStatus === 'AT_RISK' && canAccept && (
+              <p className="text-xs text-rose-600 font-semibold">
+                ⚠️ Caution: TrustScore is below 70 (At Risk). Financing is permitted for evaluation, but requires heightened underwriting review.
+              </p>
+            )}
           </div>
         </section>
 
+        {/* Right Column: TrustScore & Factor Breakdown */}
         <aside className="space-y-6">
-          <div className="rounded-2xl border border-teal/25 bg-ink-800/80 p-6 shadow-glow">
-            <p className="text-center text-[11px] uppercase tracking-[0.22em] text-slate-400">Explainable TrustScore</p>
-            <div className="mt-4">
+          <div className="rounded-2xl bg-white border border-[#AF8F6F]/40 p-6 shadow-warm space-y-4">
+            <div className="text-center">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#74512D]">Explainable TrustScore</h3>
+              <p className="text-[11px] text-[#AF8F6F]">100-Point Rule-Based Receivables Index</p>
+            </div>
+
+            <div className="my-4">
               <ScoreGauge score={invoice.trustScore} status={invoice.trustStatus} />
             </div>
-            <p className="mt-3 text-center text-xs text-slate-400">
-              Rule-based, 100 points. Not machine learning. Generated from GST, delivery, buyer check, ageing, and Account Aggregator cash-flow.
+
+            <p className="text-center text-xs text-[#74512D] leading-snug">
+              Calculated deterministically from GST filing active state, physical delivery logs, buyer validation, days outstanding, and Account Aggregator cash-flow data.
             </p>
-            <div className="mt-6">
+
+            <div className="pt-4 border-t border-[#E2D4C3]">
               <FactorBreakdown breakdown={invoice.score?.breakdown} />
             </div>
           </div>

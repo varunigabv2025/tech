@@ -25,8 +25,20 @@ const createOrder = (req, res) => {
       });
     }
 
+    const trimmedUnitId = unitId.trim();
+
+    // Check MSME unit ownership
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      if (req.user.unitId !== trimmedUnitId) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. You cannot create an order for unit '${trimmedUnitId}'.`
+        });
+      }
+    }
+
     // Validate unitId exists
-    const unitExists = db.prepare('SELECT id FROM units WHERE id = ?').get(unitId.trim());
+    const unitExists = db.prepare('SELECT id FROM units WHERE id = ?').get(trimmedUnitId);
     if (!unitExists) {
       return res.status(400).json({
         success: false,
@@ -73,7 +85,7 @@ const createOrder = (req, res) => {
     );
     insertStmt.run(
       id,
-      unitId.trim(),
+      trimmedUnitId,
       buyerName.trim(),
       description.trim(),
       numericAmount,
@@ -110,6 +122,16 @@ const deliverOrder = (req, res) => {
       });
     }
 
+    // Check MSME unit ownership
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      if (req.user.unitId !== order.unit_id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Order belongs to a different unit.'
+        });
+      }
+    }
+
     if (order.delivery_status === 'DELIVERED') {
       return res.status(400).json({
         success: false,
@@ -142,7 +164,19 @@ const deliverOrder = (req, res) => {
 // GET /api/orders
 const getOrders = (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+    if (req.user && req.user.role === 'FINANCIER') {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Role 'FINANCIER' is not authorized to access MSME orders."
+      });
+    }
+
+    let rows = [];
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      rows = db.prepare('SELECT * FROM orders WHERE unit_id = ? ORDER BY created_at DESC').all(req.user.unitId);
+    } else {
+      rows = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+    }
     const orders = rows.map(formatOrderRow);
 
     return res.status(200).json({

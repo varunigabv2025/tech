@@ -121,6 +121,17 @@ function createOrGetPackage(invoiceId) {
 function sendToTreds(req, res) {
   try {
     const { id } = req.params;
+
+    if (req.user && req.user.role === 'MSME' && req.user.unitId) {
+      const invRow = db.prepare('SELECT unit_id FROM invoices WHERE id = ?').get(id);
+      if (invRow && invRow.unit_id !== req.user.unitId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Invoice belongs to a different unit.'
+        });
+      }
+    }
+
     const result = createOrGetPackage(id);
     return res.status(result.created ? 201 : 200).json({
       success: true,

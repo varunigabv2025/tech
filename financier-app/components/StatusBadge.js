@@ -1,13 +1,15 @@
+import React from 'react';
+
 const TONES = {
-  ready: 'bg-teal/15 text-teal border-teal/30',
-  review: 'bg-amber-400/10 text-amber-300 border-amber-400/30',
-  risk: 'bg-rose-500/10 text-rose-300 border-rose-400/30',
-  listed: 'bg-sky-400/10 text-sky-300 border-sky-400/30',
-  disbursed: 'bg-emerald-400/10 text-emerald-300 border-emerald-400/30',
-  settled: 'bg-gold/15 text-gold border-gold/30',
-  declined: 'bg-slate-500/10 text-slate-300 border-slate-500/30',
-  pending: 'bg-white/5 text-slate-300 border-white/10',
-  approved: 'bg-teal/15 text-teal border-teal/30'
+  ready: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+  review: 'bg-amber-100 text-amber-900 border-amber-300',
+  risk: 'bg-rose-100 text-rose-900 border-rose-300',
+  listed: 'bg-sky-100 text-sky-900 border-sky-300',
+  disbursed: 'bg-blue-100 text-blue-900 border-blue-300',
+  settled: 'bg-purple-100 text-purple-900 border-purple-300',
+  declined: 'bg-gray-100 text-gray-800 border-gray-300',
+  pending: 'bg-[#F5EFE6] text-[#74512D] border-[#AF8F6F]',
+  approved: 'bg-emerald-100 text-emerald-900 border-emerald-300'
 };
 
 const STATUS_TONE = {
@@ -24,24 +26,26 @@ const STATUS_TONE = {
 };
 
 const LABELS = {
-  FINANCE_READY: 'Finance ready',
+  FINANCE_READY: 'Finance Ready',
   REVIEW: 'Review',
-  AT_RISK: 'At risk',
-  LISTED: 'Listed on RXIL',
-  DISBURSED: '90% disbursed',
-  SETTLED: 'Buyer paid',
+  AT_RISK: 'At Risk',
+  LISTED: 'TReDS Listed',
+  DISBURSED: '90% Disbursed',
+  SETTLED: 'Term Settled',
   DECLINED: 'Declined',
-  PENDING: 'Awaiting bank approval',
-  APPROVED: 'Consent approved',
-  REJECTED: 'Consent denied'
+  PENDING: 'Awaiting Bank Approval',
+  APPROVED: 'Consent Approved',
+  REJECTED: 'Consent Denied'
 };
 
 export default function StatusBadge({ status, label }) {
-  if (!status) return <span className="text-slate-500">—</span>;
+  if (!status) return <span className="text-[#AF8F6F]">—</span>;
   const tone = STATUS_TONE[status] || 'pending';
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${TONES[tone]}`}>
-      {label || LABELS[status] || status.replaceAll('_', ' ')}
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ${TONES[tone]}`}
+    >
+      {label || LABELS[status] || String(status).replace(/_/g, ' ')}
     </span>
   );
 }
